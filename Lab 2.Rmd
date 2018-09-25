@@ -1,0 +1,57 @@
+---
+title: "lab 2"
+author: "J Bai"
+date: "9/24/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(tidyverse)
+```
+
+### Problem 3 Write the R code to recreate the graph from the Activity 2 (Problem 4).
+```{r}
+pd <- position_dodge(0.1) 
+lab2 <- read_csv("lab2.csv")
+lab2 %>%
+  gather(Time_Category, Score, base_sport:second_pain) %>%
+  separate(Time_Category, c("Time", "Category")) %>%
+  mutate(Time = replace(Time, Time == "base", "baseline")) %>%
+  mutate(Time = replace(Time, Time == "first", "one year")) %>%
+  mutate(Time = replace(Time, Time == "second", "two years")) %>%
+  group_by(Time, Category) %>%
+  select(-patient_id) %>%
+  summarise(mean = mean(Score), sd = sd(Score)) %>%
+  ggplot(aes(x=Time, y= mean, colour=Category, group=Category)) +
+    geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.1, position=pd) +
+    geom_line(position=pd) +
+    geom_point(position=pd) +
+    ylim(0, 100) +
+    ylab("Sample mean and standard deviation")
+```
+
+
+```{r}
+coverage <- read_csv("coverage.csv", skip = 2)
+expenditures <- read_csv("expenditures.csv", skip = 2)
+coverage <- coverage[rowSums(is.na(coverage)) <= ncol(coverage)-2,]
+expenditures <- expenditures[rowSums(is.na(expenditures)) <= ncol(expenditures)-2,]
+
+coverage %>%
+  gather(Time_Category, Coverage, `2013__Employer`:`2016__Total`) %>%
+  separate(Time_Category, c("Time", "Category")) %>%
+  filter(Category == "Total") -> coverage_1
+
+expenditures %>%
+  gather(Time, Total_Health_Spending, `1991__Total Health Spending`:`2014__Total Health Spending`) %>%
+  mutate(Time = substring(Time, 1, 4)) %>%
+  full_join(coverage_1) %>%
+  filter(Time >= 2013) %>%
+  select(-Category)
+```
+
